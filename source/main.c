@@ -10,14 +10,13 @@ OBJ_AFFINE *obj_aff_buffer= (OBJ_AFFINE*)obj_buffer;
 void render_screen(int posX, int posY)
 {
 	// center
-	posX = max(posX - 120, 0);
-	posY = max(posY - 80, 0);
+	posX = clamp(posX - 120, -1, 1024-240);
+	posY = clamp(posY - 80, -1, 1024-160);
 	posX = posX - (posX % 16);
 	posY = posY - (posY % 16);
-	//posX = (posX * 100 / 1024) * 64 / 100;
-	//posY = (posY * 100 / 1024) * 128 / 100;
-	posX = posX / 16;
-	posY = posY / 8;
+	
+	posX = posX / 16; //(posX * 100 / 1024) * 64 / 100
+	posY = posY / 8; //(posY * 100 / 1024) * 128 / 100
 	int offset = posY * 128 + posX * 2;
 	for(int i = 0; i < 23; i++)
 	{
@@ -50,11 +49,11 @@ int set_spriteId(unsigned int *spriteId)
 void manage_player()
 {
 	// Position of the player on the global map
-	int playerMapX = 516, playerMapY = 660;
+	int playerMapX = 200, playerMapY = 200;
 	// Position of the player on the screen
 	int playerScreenX = 104, playerScreenY = 64;
 	// Background offset
-	int bgX = 0, bgY = 0, sbOffset = 0;
+	int bgX = 0, bgY = 0;
 	u32 spriteId = 0, paletteBank = 0;
 	// Map size
 	int mapSizeX = 1024, mapSizeY = 1024;
@@ -79,22 +78,40 @@ void manage_player()
 		set_spriteId(&spriteId);
 		if(key_hit(KEY_A))
 		{
-				playerMapX++;
+			playerMapX++;
 		}
 		if(key_hit(KEY_B))
 		{
-			sbOffset += 1024;
+			playerMapX--;
 		}
 
 		// Set player position on screen
-		if (playerMapY < 64 || playerMapY > (mapSizeY - 64))
+		//Is it supposed to be < or <= ?
+		if (playerMapY < 80 || playerMapY > (mapSizeY - 80))
 		{
-				// Math for the sides
-				playerScreenY = (64 * (playerMapY / (mapSizeY - 64))) + (playerMapY % (mapSizeY -64));
+			//If top, start from 0, if bottom start from middle
+			playerScreenY = 80 * (playerMapY / (mapSizeY - 80));
+			//Add actual player offset
+			playerScreenY += playerMapY % (mapSizeY - 80);
+			//Recenter sprite
+			playerScreenY -= 16;
 		}
 		else
 		{
-				playerScreenY = 64;
+			playerScreenY = 64;
+		}
+		if (playerMapX < 120 || playerMapX > (mapSizeX - 120))
+		{
+			//If left border, start from 0, if right border start from middle
+			playerScreenX = 120 * (playerMapX / (mapSizeX - 120));
+			//Add actual player offset
+			playerScreenX += playerMapX % (mapSizeX - 120);
+			//Recenter sprite
+			playerScreenX -= 16;
+		}
+		else
+		{
+			playerScreenX = 104;
 		}
 
 		// log position
@@ -103,9 +120,30 @@ void manage_player()
 		
 		// Display the map
 		render_screen(playerMapX, playerMapY);
-		bgX = (playerMapX - 120) % 16;
-		bgY = (playerMapY - 80) % 16;
-
+		if (playerMapX >= (mapSizeX - 120))
+		{
+			bgX = 16;
+		}
+		else if (playerMapX < 120)
+		{
+			bgX = 0;
+		}
+		else
+		{
+			bgX = max((playerMapX - 120) % 16, 0);
+		}
+		if(playerMapY >= (mapSizeY - 80))
+		{
+			bgY = 16;
+		}
+		else if (playerMapY < 80)
+		{
+			bgY = 0;
+		}
+		else
+		{
+			bgY = max((playerMapY - 80) % 16, 0);
+		}
 		// Apply the rest
 		witch->attr2= ATTR2_BUILD(spriteId, paletteBank, 0);
 		obj_set_pos(witch, playerScreenX, playerScreenY);
