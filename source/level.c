@@ -4,6 +4,15 @@
 #include "toolbox.h"
 #include "logs.h"
 
+unsigned short get_pos_tile(unsigned int posX, unsigned int posY, const unsigned short *map)
+{
+	// start at the beginning of the tile then x16 to get the line
+	int result = (posY / 8) * 8 * 16;
+	// start at the beginning of the tile then add to get column
+	result += (posX / 8);
+	return map[result];
+}
+
 void render_screen(const unsigned short *map, 
 	unsigned int mapWidth, unsigned int mapHeight, 
 	int posX, int posY)
@@ -50,6 +59,25 @@ int set_spriteId(unsigned int *spriteId)
 	return 0;
 }
 
+void move_player(unsigned int *posX, unsigned int *posY, int mapSizeX, int mapSizeY, const unsigned short *collisionMap)
+{
+	unsigned int playerMapNewX = *posX, playerMapNewY = *posY;
+	int currentTile = 0;
+
+	playerMapNewX += key_tri_horz() * 2;
+	playerMapNewX = clamp(playerMapNewX, 0, mapSizeX);
+	currentTile = get_pos_tile(playerMapNewX, playerMapNewY, collisionMap);
+	if (currentTile != collisionTile)
+		*posX = playerMapNewX;
+	playerMapNewX = *posX;
+
+	playerMapNewY += key_tri_vert() * 2;
+	playerMapNewY = clamp(playerMapNewY, 0, mapSizeY);
+	currentTile = get_pos_tile(playerMapNewX, playerMapNewY, collisionMap);
+	if (currentTile != collisionTile)
+		*posY = playerMapNewY;
+}
+
 void manage_player(mapInfo *map, unsigned int playerStartX, unsigned int playerStartY, OBJ_ATTR *obj_buffer)
 {
 	// Position of the player on the global map
@@ -68,26 +96,14 @@ void manage_player(mapInfo *map, unsigned int playerStartX, unsigned int playerS
 		ATTR2_PALBANK(paletteBank) | spriteId);
 
 	obj_set_pos(witch, playerScreenX, playerScreenY);
- 	char nb[20];
+ 	char nb[30];
 	while(1)
 	{
 		vid_vsync();
 		key_poll();
-
-		playerMapX += key_tri_horz() * 2;
-		playerMapX = clamp(playerMapX, 0, mapSizeX);
-		playerMapY += key_tri_vert() * 2;
-		playerMapY = clamp(playerMapY, 0, mapSizeY);
 		
-		set_spriteId(&spriteId);
-		if(key_hit(KEY_A))
-		{
-			playerMapX++;
-		}
-		if(key_hit(KEY_B))
-		{
-			playerMapX--;
-		}
+		move_player(&playerMapX, &playerMapY, mapSizeX, mapSizeY, map->mapCollisions);
+				set_spriteId(&spriteId);
 
 		// Set player position on screen
 		//Is it supposed to be < or <= ?
@@ -119,7 +135,7 @@ void manage_player(mapInfo *map, unsigned int playerStartX, unsigned int playerS
 		}
 
 		// log position
-		sprintf(nb, "%d, %d", playerMapX, playerMapY);
+		sprintf(nb, "%d %d", playerMapX, playerMapY);
 		log_msg(nb);
 		
 		// Display the map

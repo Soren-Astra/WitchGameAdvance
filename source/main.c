@@ -5,6 +5,7 @@
 #include "logs.h"
 #include "dragonruinstest.h"
 #include "dragonruinsdata.h"
+#include "dragruincol.h"
 
 OBJ_ATTR obj_buffer[128];
 
@@ -24,7 +25,7 @@ int main()
 	init_graphics();
 	init_logs(2, 30);
 	oam_init(obj_buffer, 128);
-	mapInfo level = { dragonruinstestMap, dragonruinstestPal, dragonruinstestTiles,
+	mapInfo level = { dragonruinstestMap, dragonruinstestPal, dragonruinstestTiles, dragruincolMap,
 		dragonruinstestMapLen, dragonruinstestPalLen, dragonruinstestTilesLen, 
 		dragonruinsPixelWidth, dragonruinsPixelHeight };
 	load_level(&level, 450, 450, obj_buffer);
